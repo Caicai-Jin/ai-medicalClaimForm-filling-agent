@@ -1,0 +1,6 @@
+node_modules/
+logs/
+screenshots/
+dist/
+package-lock.json
+*.md
