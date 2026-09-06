@@ -4,7 +4,7 @@
 
 [![Watch the demo](https://img.youtube.com/vi/6S_8ZS-nQlE/maxresdefault.jpg)](https://youtu.be/6S_8ZS-nQlE)
 
-A walkthrough of the core task plus all 6 features below, running against the live form.
+A walkthrough of the core task plus all 6 features below, running against the live form. Click on the image to view the demo video. 
 
 ## Overview
 
