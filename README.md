@@ -484,6 +484,14 @@ behavior was verified manually, repeatedly, against the live site:
 - **Leak on the browser launch path**: if `browser.newPage()` or the initial `page.goto()` failed,
   there was no `Page` handle yet for anything to close, so the browser leaked silently. Fixed in
   `BrowserAgent.launch()` (`browserAgent.ts`) by closing the browser itself before rethrowing.
+- **Byte-offset vs. character-offset mismatch in a test**: `logger.test.ts` measured "where the log
+  file was before this test" in bytes (`fs.statSync(...).size`), then sliced the *decoded string*
+  by that same number to isolate the newly written line. That only works if every character in the
+  file so far is a single byte. It broke once the log file had an em dash (`—`) in it -- from a
+  real AI-generated run summary a few lines earlier -- which is 3 bytes but 1 character, throwing
+  the byte-based offset off by 2 per occurrence and truncating the JSON line the test tried to
+  parse. Fixed by slicing the raw `Buffer` at the byte offset first, then decoding only that slice
+  to a string (`src/logger.test.ts`).
 - **Crash-triggered leak on the CLI path**: `npm run dev`'s entrypoint called `main()` without
   awaiting or catching it, so a thrown error became an unhandled promise rejection that crashed
   Node abruptly. That abrupt crash was cutting Windows off before it finished reaping the

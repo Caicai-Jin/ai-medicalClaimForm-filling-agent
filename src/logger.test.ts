@@ -19,8 +19,12 @@ test("createRunLogger appends a well-formed JSON line per call, tagged with its 
   const log = createRunLogger(runId);
   log.info("test.event", { foo: "bar" });
 
-  const content = fs.readFileSync(LOG_FILE, "utf8");
-  const newContent = content.slice(sizeBefore);
+  // Slice the raw bytes first, then decode -- sizeBefore is a byte offset (from fs.stat), but
+  // the log file can contain multi-byte UTF-8 characters (e.g. an em dash in a logged LLM
+  // summary), so slicing the utf8-decoded *string* by a byte count reads from the wrong
+  // position and can start mid-character.
+  const buffer = fs.readFileSync(LOG_FILE);
+  const newContent = buffer.subarray(sizeBefore).toString("utf8");
   const lines = newContent.trim().split("\n");
   const entry = JSON.parse(lines[lines.length - 1]);
 
