@@ -1,5 +1,11 @@
 # AI Form-Filling Agent
 
+## Demo
+
+[![Watch the demo](https://img.youtube.com/vi/6S_8ZS-nQlE/maxresdefault.jpg)](https://youtu.be/6S_8ZS-nQlE)
+
+A walkthrough of the core task plus all 6 features below, running against the live form.
+
 ## Overview
 
 This project is an AI agent that fills out a web form by itself. Instead of writing a script that
