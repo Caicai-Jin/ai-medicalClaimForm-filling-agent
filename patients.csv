@@ -1,0 +1,4 @@
+firstName,lastName,dateOfBirth,medicalId,gender,bloodType,allergies,medications,emergencyContactName,emergencyContactPhone
+John,Doe,1990-01-01,91927885,Male,A+,None,None,Jane Doe,555-0100
+Alice,Smith,1985-05-12,12345678,Female,O+,Peanuts,Aspirin,Bob Smith,555-0111
+Carlos,Diaz,1978-11-03,87654321,Male,B-,None,None,Maria Diaz,555-0122

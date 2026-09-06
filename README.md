@@ -2,48 +2,50 @@
 
 ## Overview
 
-A self-directed project exploring agentic browser automation: an LLM-driven agent that navigates
-a multi-section web form, decides which fields and dropdowns to fill and in what order via tool
-calls, and verifies its own submission against the DOM rather than trusting the model's
-self-report.
+This project is an AI agent that fills out a web form by itself. Instead of writing a script that
+clicks the same exact spots every time, I gave an LLM a small set of actions it can take (read the
+page, type into a field, click submit, etc.) and let it decide which action to take and when. The
+agent also double-checks its own work: after clicking submit, it reads the actual page to confirm
+the submission really went through, instead of just trusting whatever the model says happened.
 
-### Task
+### Core task
 
-Build an AI agent that fills out a web form end-to-end via a working agentic loop, targeting an
-example healthcare-intake workflow.
+Fill out a web form end-to-end, using an example healthcare-intake form as the target:
 
-Workflow:
-
-1. Navigate to the target form
-2. Fill out the form with:
+1. Navigate to the form
+2. Fill in:
    1. First Name: John
    2. Last Name: Doe
    3. Date of birth: 1990-01-01
    4. Medical ID: 91927885
-3. Click 'Submit'
+3. Click "Submit"
 
-### Additional features implemented
+### Additional features
 
-Beyond the core task above, the agent also:
+Beyond the core task above, I built 6 more features. Each one is numbered below, and that same
+number is used everywhere else in this README (implementation details, and the test walkthrough
+further down) so it's easy to go from "what it does" to "how to test it":
 
-1. Completes the 2nd and 3rd sections of the form, including:
-   1. Filling out dropdowns
-   2. Scrolling to, and opening, the appropriate accordion sections
-2. Exposes the workflow via an API call
-3. Accepts dynamic variables for the prompt (e.g. a dynamic "First Name" and "Last Name" rather
-   than only the hardcoded example)
-4. Runs automatically on a schedule (every 5 minutes by default)
-5. Verifies its own submission against the DOM instead of trusting the model's self-report (see
-   "Bonus 5" in the implementation notes below)
+1. **Multi-section navigation & dropdowns** -- fills out the form's other two sections too, which
+   are collapsed by default and include dropdown fields, not just plain text boxes.
+2. **REST API trigger** -- lets someone kick off a run over the network (an API call) instead of
+   only from the command line.
+3. **Dynamic patient data** -- lets you pass in a different name/patient each time, instead of
+   always using the same hardcoded example.
+4. **Scheduled runs** -- runs automatically on a timer (every 5 minutes by default), with no one
+   needing to trigger it by hand.
+5. **DOM-verified submission** -- checks the real page after clicking submit, so it doesn't just
+   take the model's word for it.
+6. **CSV batch processing** -- reads a list of patients from a CSV file and submits the form once
+   for each one, instead of handling only a single patient per run.
 
-### What's provided
+### Tech stack
 
-The starting setup includes:
-
-1. An initiated playwright session
-2. A model setup, with access to the Vercel AI SDK
-   1. NOTE: You will need to provide your own Gemini API key via the `GOOGLE_GENERATIVE_AI_API_KEY` environment variable.
-   2. You can get a free API key from the [Google AI Studio](https://aistudio.google.com/apikey).
+- **Playwright** to drive a real browser session (navigate, read the page, click, type).
+- **Google Gemini**, called through the **Vercel AI SDK**, as the model deciding what to do.
+  You'll need your own Gemini API key in the `GOOGLE_GENERATIVE_AI_API_KEY` environment variable
+  -- you can get a free one from [Google AI Studio](https://aistudio.google.com/apikey).
+- **TypeScript** throughout, with `zod` for runtime validation.
 
 ## Setup
 
@@ -67,9 +69,9 @@ Install playwright
 npx playwright install
 ```
 
-Create a `.env` file and add your Gemini API key. The target form is served from `docs/index.html`
-in this repo (a self-contained clone of the original test form) -- serve it locally, or deploy it
-via GitHub Pages, and point `FORM_URL` at it:
+Create a `.env` file and add your Gemini API key. The form the agent fills out lives at
+`docs/index.html` in this repo -- serve it locally, or deploy it with GitHub Pages, and point
+`FORM_URL` at wherever it ends up:
 
 ```bash
 GOOGLE_GENERATIVE_AI_API_KEY=your_google_key
@@ -93,33 +95,33 @@ npm run dev
 
 ## Implementation notes
 
-Everything below documents what was actually built, how to run and verify each piece, and the
-reasoning behind a few non-obvious decisions -- written so a reviewer can check the work without
-having to read every line of code first.
+This section covers what's actually in the code, how to run and check each feature yourself, and
+why a few of the less obvious decisions were made -- so you can get a feel for the work without
+reading every file.
 
 ### File map
 
-Each module has one clear job and a name that says what it is, rather than a grab-bag `helper.ts`
-or `utils.ts`:
+Each file has one clear job, so you can tell what it does from its name alone:
 
 | File | Purpose |
 |---|---|
-| `src/types.ts` | `MedicalFormData` shape + `exampleFormData` (the John Doe example from the SOP), plus the `zod` schema (`medicalFormDataSchema` / `partialMedicalFormDataSchema`) the TS type is derived from -- one source of truth for both typing and runtime validation. |
-| `src/browserAgent.ts` | **`BrowserAgent`** -- owns one Playwright browser session: launch, navigate, screenshot, guaranteed cleanup. Knows nothing about forms or the LLM. |
-| `src/formFiller.ts` | **`FormFiller`** -- the 5 tools the agent can call (`getPageState`, `openSection`, `fillField`, `selectDropdown`, `submitForm`) bound to a `Page`, plus the DOM-verified `submitted` state. Knows nothing about the LLM or scheduling. |
-| `src/mutex.ts` | **`Mutex`** -- generic concurrency primitive `FormFiller` uses to serialize tool calls; reusable outside the forms context. |
-| `src/promptBuilder.ts` | `buildPrompt()` -- turns `MedicalFormData` into the instructions given to the model. |
-| `src/taskRunner.ts` | **`TaskRunner`** -- the actual agentic loop: launches a `BrowserAgent`, hands the LLM a `FormFiller`'s tools via `generateText`, logs every step, captures a screenshot on failure, and guarantees cleanup. This is what used to be a giant `main.ts`. |
-| `src/exclusiveRunner.ts` | `runExclusive()` -- the single entry point used by both the API and the scheduler; owns the concurrency lock, data-merging, and retry logic around one `TaskRunner.run()` call. |
-| `src/main.ts` | Thin CLI entrypoint (`npm run dev`): constructs a `TaskRunner` and runs it once with the example data. |
-| `src/server.ts` / `src/_internal/serve.ts` | Bonus 2: plain `node:http` API exposing `POST /run`, with request-body validation. |
-| `src/scheduler.ts` / `src/_internal/schedule.ts` | Bonus 4: `setInterval`-based 5-minute scheduler. |
+| `src/types.ts` | Defines what a patient's data looks like (`MedicalFormData`), an example patient (`exampleFormData`), and the validation rules for that data (built with `zod`), used everywhere else in the project. |
+| `src/browserAgent.ts` | **`BrowserAgent`** -- manages one browser session: opens it, navigates, takes screenshots, and always closes it cleanly afterward. Doesn't know anything about the form or the AI model. |
+| `src/formFiller.ts` | **`FormFiller`** -- the 5 actions the AI can take on the page (read it, open a section, type into a field, pick a dropdown option, submit), plus the real submitted/not-submitted check. Doesn't know anything about the AI model or scheduling. |
+| `src/mutex.ts` | **`Mutex`** -- a small helper that makes sure the agent's actions run one at a time instead of overlapping and colliding with each other. |
+| `src/promptBuilder.ts` | `buildPrompt()` -- turns a patient's data into the instructions given to the AI model. |
+| `src/taskRunner.ts` | **`TaskRunner`** -- runs one full attempt: opens a browser, lets the AI use `FormFiller`'s actions, logs each step, takes a screenshot if something fails, and cleans up afterward. |
+| `src/exclusiveRunner.ts` | `runExclusive()` -- the one place the API, scheduler, and batch runner all go through to start a run; handles making sure only one run happens at a time, merging in custom data, and retrying on failure. |
+| `src/main.ts` | Command-line entry point (`npm run dev`): runs one attempt using the example patient data. |
+| `src/server.ts` / `src/_internal/serve.ts` | Feature 2 (REST API trigger): plain `node:http` API exposing `POST /run`, with request-body validation. |
+| `src/scheduler.ts` / `src/_internal/schedule.ts` | Feature 4 (Scheduled runs): `setInterval`-based 5-minute scheduler. |
 | `src/_internal/service.ts` | Runs the API and scheduler together in one process (`npm run start`), so they share one concurrency lock. |
-| `src/errors.ts` | `CategorizedError` + classifiers turning raw Playwright/AI-SDK errors into `browser`/`network`/`llm`/`timeout` categories. |
-| `src/logger.ts` | Structured, `runId`-correlated logging to console + `logs/agent.log`. |
-| `logs/`, `screenshots/` | Gitignored output directories: structured run logs and failure screenshots, respectively. |
-| `src/mutex.test.ts`, `src/promptBuilder.test.ts`, `src/exclusiveRunner.test.ts`, `src/errors.test.ts`, `src/logger.test.ts`, `src/browserAgent.test.ts`, `src/types.test.ts` | Unit tests, run via `npm test` (see "Testing strategy" below). |
-| `src/taskRunner.e2e.test.ts` | Real end-to-end test, run via `npm run test:e2e` -- **not** part of `npm test`. |
+| `src/batchRunner.ts` / `src/_internal/batch.ts` | Feature 6 (CSV batch processing): reads a patient roster from a CSV text file and submits the form once per patient (`npm run batch`). |
+| `src/errors.ts` | Sorts errors into categories (`browser`, `network`, `llm`, `timeout`) so the rest of the app can react appropriately, instead of treating every failure the same way. |
+| `src/logger.ts` | Logs each run's steps to the console and to `logs/agent.log`, tagged with a run ID so you can trace one run's activity. |
+| `logs/`, `screenshots/` | Where run logs and failure screenshots get saved. Not committed to git (see `.gitignore`). |
+| `src/mutex.test.ts`, `src/promptBuilder.test.ts`, `src/exclusiveRunner.test.ts`, `src/errors.test.ts`, `src/logger.test.ts`, `src/browserAgent.test.ts`, `src/types.test.ts`, `src/batchRunner.test.ts` | Unit tests, run via `npm test` (see "Testing strategy" below). |
+| `src/taskRunner.e2e.test.ts` | A real end-to-end test (actual browser, actual AI call), run separately via `npm run test:e2e` -- not part of `npm test`. |
 
 ```
 BrowserAgent  ──┐
@@ -129,31 +131,61 @@ FormFiller    ──┘         │
                     promptBuilder, logger, errors
 ```
 
-### How each requirement is satisfied
+### How each feature is implemented
 
-- **Core task** (navigate, fill Personal Information, submit): `TaskRunner` builds a prompt from
-  `MedicalFormData` (via `promptBuilder`) and lets the LLM drive `FormFiller`'s 5 tools -- there is
-  no hardcoded click/fill script; the model decides which tool to call at each step.
-- **Bonus 1** (Medical Information + Emergency Contact, dropdowns, accordion navigation):
-  same loop -- `openSection` reveals the other two sections and `selectDropdown` drives the two
-  native `<select>` elements (Gender, Blood Type).
-- **Bonus 2** (API call): `npm run serve` starts `POST /run` (see `src/server.ts`).
-- **Bonus 3** (dynamic variables): `POST /run` accepts a JSON body of `Partial<MedicalFormData>`;
-  `runExclusive` merges it over `exampleFormData` so any subset of fields can be overridden
-  (`src/exclusiveRunner.ts`).
-- **Bonus 4** (5-minute schedule): `npm run schedule` (or `npm run start` for API + schedule
-  together). Interval is overridable via `SCHEDULE_INTERVAL_MS` for fast local testing.
-- **Bonus 5** (verified submission): see below.
+- **Core task**: `TaskRunner` builds a prompt describing the patient's data and hands the AI
+  model `FormFiller`'s actions. There's no fixed click-by-click script -- the model looks at the
+  page and decides which action to take at each step.
+- **Feature 1 -- Multi-section navigation & dropdowns**: same loop as the core task. The model can
+  call `openSection` to expand the Medical Information or Emergency Contact section, and
+  `selectDropdown` to choose a Gender or Blood Type option.
+- **Feature 2 -- REST API trigger**: `npm run serve` starts a small API with one endpoint,
+  `POST /run` (see `src/server.ts`).
+- **Feature 3 -- Dynamic patient data**: that same `POST /run` endpoint accepts a patient's data
+  in the request body. Anything you send overrides the example data; anything you don't send falls
+  back to the example (`src/exclusiveRunner.ts`).
+- **Feature 4 -- Scheduled runs**: `npm run schedule` runs the agent every 5 minutes on its own
+  (or `npm run start` to run the API and the scheduler together). The interval is configurable via
+  `SCHEDULE_INTERVAL_MS`, mainly so it's fast to test.
+- **Feature 5** and **Feature 6** are two things I added on my own, beyond what was asked, because
+  I ran into a real need for them while building this -- explained in full below.
 
-### Bonus 5 -- verifying submission instead of trusting the LLM's own report
+### Feature 5 -- DOM-verified submission (not trusting the LLM's own report)
 
-While testing, the model once finished with _"The submission was successful"_ when the actual
-DOM never showed a success message -- a real hallucination, not a hypothetical. `FormFiller`'s
-`submitForm` tool (`src/formFiller.ts`) now captures `document.body.innerText` immediately after
-clicking and sets a `state.submitted` flag by checking for the real confirmation text, independent
-of whatever the model says afterward. `exclusiveRunner.ts` trusts that flag, not just whether
-`generateText` threw -- so the API/scheduler report `"failed"` if the page never actually
-confirmed success, even if the LLM's own narration sounded confident.
+While testing, the model once said the form had been submitted successfully when the page hadn't
+actually shown any success message -- it just guessed wrong. To fix this, right after clicking
+Submit, the code reads the actual text on the page and checks it for the real confirmation message,
+completely separately from whatever the model says. If that message isn't there, the run is marked
+as failed no matter how confident the model's own summary sounds.
+
+### Feature 6 -- CSV batch processing (a whole patient roster in one run)
+
+The core task and the API only handle one patient at a time. In a real setting, though, you'd
+usually have a whole batch of intake forms to process, not just one person -- so `npm run batch`
+reads a list of patients from a plain CSV file (`patients.csv` by default, or any file path you
+pass in) and submits the form once for each patient, automatically.
+
+- `parsePatientCsv()` (`src/batchRunner.ts`) checks every row against the same validation rules the
+  API uses. If a row has bad data (a broken date, a missing field, a typo'd column header), it gets
+  reported and skipped -- it doesn't stop the rest of the batch from running.
+- `runBatch()` then processes each valid patient one at a time, reusing the same run logic as a
+  single API request, so every patient gets the same retries, verification, and logging. If one
+  patient fails, the rest of the list still runs.
+- The CSV's columns match the patient data fields exactly. Any extra columns are ignored, and the
+  optional fields (gender, blood type, allergies, medications, emergency contact) can be left blank.
+
+Run it with:
+
+```bash
+npm run batch                      # reads ./patients.csv, submits one form per row
+npm run batch -- path/to/other.csv # or point it at a different roster file
+```
+
+A ready-to-run sample is included at the repo root (`patients.csv`, 3 patients including the example
+John Doe). Console output ends with a summary, e.g.:
+```
+Batch finished: 3/3 completed, 0 failed.
+```
 
 ### Running each part
 
@@ -162,12 +194,13 @@ npm run dev                                   # single run, hardcoded example da
 npm run serve                                 # API only -- POST /run
 npm run schedule                              # scheduler only -- every 5 min
 npm run start                                 # API + scheduler together (shared concurrency lock)
+npm run batch                                 # reads patients.csv, submits one form per patient
 npm test                                      # unit tests (fast, free, no browser/LLM)
 npm run test:e2e                              # real end-to-end test against the live site + Gemini
 SCHEDULE_INTERVAL_MS=20000 npm run schedule   # scheduler with a short interval, for fast manual testing
 ```
 
-Example API call with dynamic data (Bonus 3):
+Example API call with dynamic data:
 
 ```bash
 curl -X POST http://localhost:3000/run -H "Content-Type: application/json" \
@@ -176,14 +209,15 @@ curl -X POST http://localhost:3000/run -H "Content-Type: application/json" \
 
 ### Verifying it yourself, step by step
 
-A concrete walkthrough for manually checking the core task and every bonus point, with what to
-look for at each step.
+A concrete walkthrough for manually checking the core task and every feature above, with what to
+look for at each step -- useful if you want to try this out yourself rather than just reading the
+code.
 
 **0. Clean start**
 ```bash
 npm test
 ```
-Expect `pass 35`, `fail 0` before doing anything else.
+Expect `pass 42`, `fail 0` before doing anything else.
 
 **1. Core task** (navigate, fill Personal Information, submit)
 ```bash
@@ -196,8 +230,8 @@ Console ends with:
 [...] browser.session_closed {"closedCleanly":true}
 ```
 
-**2. Bonus 1** (Medical Information + Emergency Contact, dropdowns) -- same run as step 1, scroll
-back through the console output and confirm all of these appear:
+**2. Feature 1 -- Multi-section navigation & dropdowns** (Medical Information + Emergency Contact)
+-- same run as step 1, scroll back through the console output and confirm all of these appear:
 ```
 tool.called {"toolName":"openSection","input":{"section":"Medical Information"}}
 tool.called {"toolName":"selectDropdown","input":{"label":"Gender","optionText":"Male"}}
@@ -205,14 +239,14 @@ tool.called {"toolName":"selectDropdown","input":{"label":"Blood Type","optionTe
 tool.called {"toolName":"openSection","input":{"section":"Emergency Contact"}}
 ```
 
-**3. Bonus 5** (verified submission) -- same run, right before `run.finished`:
+**3. Feature 5 -- DOM-verified submission** -- same run, right before `run.finished`:
 ```
 submission.verified {"confirmationText":"Form submitted successfully!..."}
 ```
 (*Not* `submission.not_confirmed` -- that would mean the agent claimed success without the page
 actually confirming it.)
 
-**4. Bonus 2** (API call) -- Terminal 1:
+**4. Feature 2 -- REST API trigger** -- Terminal 1:
 ```bash
 npm run serve
 ```
@@ -223,7 +257,7 @@ curl -X POST http://localhost:3000/run -H "Content-Type: application/json" -d "{
 Expect `{"runId":"...","status":"completed","summary":"..."}` and the browser running the same
 flow as step 1.
 
-**5. Bonus 3** (dynamic variables) -- same Terminal 2, server still running:
+**5. Feature 3 -- Dynamic patient data** -- same Terminal 2, server still running:
 ```bash
 curl -X POST http://localhost:3000/run -H "Content-Type: application/json" \
   -d "{\"firstName\":\"Alice\",\"lastName\":\"Smith\"}"
@@ -231,20 +265,30 @@ curl -X POST http://localhost:3000/run -H "Content-Type: application/json" \
 The browser should actually type "Alice"/"Smith", not the hardcoded John Doe -- proof the data is
 truly parameterized, not just defaulted. Stop the server (Ctrl+C) when done.
 
-**6. Bonus 4** (5-minute schedule)
+**6. Feature 4 -- Scheduled runs** (5-minute schedule)
 ```bash
 SCHEDULE_INTERVAL_MS=20000 npm run schedule
 ```
 Fires immediately, completes, fires again ~20s later. Watch at least 2 full cycles, then Ctrl+C.
 
-**7. Automated end-to-end proof**
+**7. Feature 6 -- CSV batch processing** (patient roster from a text file)
+```bash
+npm run batch
+```
+Three browser runs happen back-to-back (John Doe, Alice Smith, Carlos Diaz -- from `patients.csv`),
+each with its own `run.started`/`submission.verified`/`run.finished` log lines. Console ends with:
+```
+Batch finished: 3/3 completed, 0 failed.
+```
+
+**8. Automated end-to-end proof**
 ```bash
 npm run test:e2e
 ```
 Expect `pass 1`, `fail 0` -- one fully automated test proving the whole pipeline (browser + LLM +
 submission) works together, not just each piece manually.
 
-**8. Cleanup check**
+**9. Cleanup check**
 ```bash
 tasklist /FI "IMAGENAME eq node.exe"
 ```
@@ -378,6 +422,11 @@ dependencies), fast and free, safe to run on every change:
   instead of a null-pointer-style failure).
 - `src/types.test.ts` -- `partialMedicalFormDataSchema` accepts valid/empty bodies and rejects a
   malformed `dateOfBirth`, an empty required-looking field, the wrong type, and unrecognized keys.
+- `src/batchRunner.test.ts` -- `parsePatientCsv` parses valid rows into `MedicalFormData`, handles
+  quoted fields containing commas, and reports a malformed/incomplete row without dropping the
+  valid rows around it; `runBatch` (via an injected `runFn`, no real browser) processes patients
+  strictly one at a time in file order, isolates one patient's failure from the rest of the roster,
+  and surfaces skipped-row counts in its summary.
 
 **2. End-to-end test (`npm run test:e2e`)** -- `src/taskRunner.e2e.test.ts` drives a real
 `TaskRunner` against the actual live site with a real Gemini call, and asserts `result.submitted
@@ -395,9 +444,8 @@ behavior was verified manually, repeatedly, against the live site:
 
 - Full run via `npm run dev` -- all 3 sections filled correctly, dropdowns selected, confirmed via
   the real success message.
-- API run via `npm run serve` + `curl`, including with custom data (Bonus 3) and a genuine
-  concurrency race (two requests fired within milliseconds of each other -- one `completed`, one
-  `skipped`).
+- API run via `npm run serve` + `curl`, including with custom data and a genuine concurrency race
+  (two requests fired within milliseconds of each other -- one `completed`, one `skipped`).
 - Scheduler run over multiple real cycles (short interval for speed), confirming it fires
   immediately, skips overlapping ticks, and keeps running unattended.
 - Post-fix regression check: confirmed via `tasklist`/`Get-Process` (filtered by executable path,
@@ -411,7 +459,7 @@ behavior was verified manually, repeatedly, against the live site:
   regression-tested in `mutex.test.ts`.
 - **Hallucinated success**: the LLM sometimes reported a successful submission when the page never
   actually confirmed it. Fixed by capturing the real DOM text at submit time and trusting that over
-  the model's own words (Bonus 5, see above).
+  the model's own words (see "DOM-verified submission" above).
 - **Leaked browser processes**: cleanup code skipped closing the Playwright browser whenever the
   page object was already closed, leaking the whole Chromium process tree (GPU/renderer/network
   children included) on every run. Fixed by always attempting `browser.close()` regardless of page
