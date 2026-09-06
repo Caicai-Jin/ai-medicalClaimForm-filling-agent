@@ -263,7 +263,20 @@ curl -X POST http://localhost:3000/run -H "Content-Type: application/json" \
   -d "{\"firstName\":\"Alice\",\"lastName\":\"Smith\"}"
 ```
 The browser should actually type "Alice"/"Smith", not the hardcoded John Doe -- proof the data is
-truly parameterized, not just defaulted. Stop the server (Ctrl+C) when done.
+truly parameterized, not just defaulted.
+
+Note: only `firstName` and `lastName` were sent here, so every other field (date of birth,
+medical ID, gender, etc.) still falls back to the John Doe example data -- that's expected, not a
+bug. The merge is "start from the example, then overlay whatever you actually sent"
+(`{ ...exampleFormData, ...data }` in `src/exclusiveRunner.ts`), so you can override just the
+fields you care about instead of having to send the whole patient every time. To see a fully
+custom patient with no John Doe leftovers, send every field:
+```bash
+curl -X POST http://localhost:3000/run -H "Content-Type: application/json" \
+  -d "{\"firstName\":\"Alice\",\"lastName\":\"Smith\",\"dateOfBirth\":\"1985-05-12\",\"medicalId\":\"12345678\",\"gender\":\"Female\",\"bloodType\":\"O+\",\"allergies\":\"Peanuts\",\"medications\":\"Aspirin\",\"emergencyContactName\":\"Bob Smith\",\"emergencyContactPhone\":\"555-0111\"}"
+```
+
+Stop the server (Ctrl+C) when done.
 
 **6. Feature 4 -- Scheduled runs** (5-minute schedule)
 ```bash
