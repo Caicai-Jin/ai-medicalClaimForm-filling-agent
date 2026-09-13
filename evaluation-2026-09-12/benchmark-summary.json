@@ -1,0 +1,19 @@
+{
+  "recordsAttempted": 100,
+  "target": 100,
+  "submitted": 100,
+  "submittedWithMatchingCapturedFields": 100,
+  "failed": 0,
+  "fieldMismatchRecords": 0,
+  "attempts": 100,
+  "medianSeconds": 15.5325,
+  "p95Seconds": 17.744,
+  "totalRecordSeconds": 1509.507,
+  "modelRequests": 1380,
+  "inputTokens": 3815149,
+  "cachedInputTokens": 492081,
+  "outputTokens": 84882,
+  "estimatedStandardPaidEquivalentUSD": 5.82235215,
+  "limitations": "Field values captured after browser tool actions; not independent server-persistence verification. Billing unknown. Evaluation wrapper records exceptions as nonretryable; this run does not benchmark production retry recovery.",
+  "failures": []
+}

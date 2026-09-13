@@ -6,6 +6,104 @@
 
 A walkthrough of the core task plus all 6 features below, running against the live form. Click on the image to view the demo video. 
 
+## 100-record benchmark and Windows CMD testing
+
+On September 12, 2026, the agent completed a controlled evaluation of **100 synthetic records** on the demo form:
+
+| Measurement | Result |
+|---|---:|
+| Confirmed submissions | 100/100 |
+| Confirmed submissions with matching captured field values | 100/100 |
+| Failed records / captured-field mismatches | 0 / 0 |
+| Median processing time | 15.5 seconds per record |
+| 95th-percentile processing time | 17.7 seconds per record |
+| Sum of per-record durations | 25.2 minutes |
+
+The dataset includes varied names, dates, dropdown options, long text, commas, quotation marks, and blank optional fields. All records are fictional.
+
+- [100-record CSV](evaluation-2026-09-12/patients-100.csv) — UTF-8, opens in Excel.
+- [Per-record results](evaluation-2026-09-12/benchmark-results.csv).
+- [Detailed methodology, usage, and limitations](evaluation-2026-09-12/README.md).
+- [Separate invalid-input cases](evaluation-2026-09-12/patients-invalid.csv).
+
+Two fixes preceded this evaluation: batch records no longer inherit example-patient values for missing optional fields, and submission verification waits up to five seconds for asynchronous confirmation. The unit suite contains **44 passing tests** in the recorded verification. Separate browser checks confirmed that delayed success is recognized and missing confirmation remains a failure.
+
+### Reproduce in Command Prompt (CMD)
+
+Run commands from the project root. For the original Windows checkout:
+
+```cmd
+cd /d "C:\Users\jin20\Downloads\ai-agent-publish"
+```
+
+For another checkout, replace that path with your own. Keep a valid `GOOGLE_GENERATIVE_AI_API_KEY` in your local `.env`; never commit that file.
+
+**1. Restore dependencies and install Chromium (initial setup):**
+
+```cmd
+npm ci
+npx playwright install chromium
+```
+
+**2. Run focused batch regression tests without model calls:**
+
+```cmd
+node --require ts-node/register --test --test-concurrency=1 src/batchRunner.test.ts src/exclusiveRunner.test.ts
+```
+
+Expect zero failures. This is a subset of the 44-test suite. Stop other agent runs while running tests because they can write to the same log file.
+
+**3. Create a two-record sample to avoid unnecessarily repeating the full benchmark:**
+
+```cmd
+node -e "const fs=require('fs');const rows=fs.readFileSync('evaluation-2026-09-12/patients-100.csv','utf8').trimEnd().split(/\r?\n/);fs.writeFileSync('patients-test-2.csv',rows.slice(0,3).join('\n')+'\n');"
+```
+
+This slicing command is specific to the supplied CSV, which has no multiline fields. Open `patients-test-2.csv` in Excel to inspect its contents.
+
+**4. Watch two real browser submissions:**
+
+```cmd
+npm run batch -- patients-test-2.csv
+```
+
+This uses the configured Gemini key. Chromium opens and processes the records sequentially. Check:
+
+- Record one: **Alex Example**, ID **SYNTH-0001**. Allergies, medications, and emergency-contact fields should remain blank, not receive example values.
+- Record two: **Mei Example**, ID **SYNTH-0002**, with its supplied optional values.
+- Look for `submission.verified` in CMD and the final summary:
+
+```text
+Batch finished: 2/2 completed, 0 failed.
+```
+
+**5. Run all 100 only when ready:**
+
+```cmd
+npm run batch -- evaluation-2026-09-12/patients-100.csv
+```
+
+The expected successful summary is:
+
+```text
+Batch finished: 100/100 completed, 0 failed.
+```
+
+The recorded run took about 25 minutes; timing and results can vary. Press **Ctrl+C** to interrupt. Logs are written to `logs/agent.log`; failure screenshots are saved under `screenshots/` when available. Do not run another agent instance simultaneously.
+
+### What this result does and does not establish
+
+The standard batch command checks the page's submission confirmation; it does **not** independently compare every field. The recorded benchmark additionally observed actual textbox values and selected option labels after browser tool actions and compared them with the CSV. It used headless Edge through a compatible Playwright runtime; the normal command above uses the project's visible Chromium browser. Both use the same fixed agent logic.
+
+These are controlled browser-entry results on one demo form, not proof of server-side persistence, universal website support, or production reliability. The live benchmark made no record-level retries and does not establish recovery performance. Separate negative tests still reveal calendar-date and dropdown-enum validation gaps.
+
+API calls consume model quota. The recorded benchmark used about US$5.82 at standard paid-price-equivalent rates; that is an estimate, not a verified charge. Your actual cost depends on the key's billing/free-tier status. See the detailed report for token counts and pricing assumptions.
+
+Keep the linked `evaluation-2026-09-12` data/results folder with this README if publishing later. Nothing was pushed to GitHub as part of this evaluation.
+
+
+---
+
 ## Overview
 
 This project is an AI agent that fills out a web form by itself. Instead of writing a script that
@@ -223,7 +321,7 @@ code.
 ```bash
 npm test
 ```
-Expect `pass 42`, `fail 0` before doing anything else.
+Expect `pass 44`, `fail 0` before doing anything else.
 
 **1. Core task** (navigate, fill Personal Information, submit)
 ```bash
@@ -547,3 +645,4 @@ Things intentionally left out of scope for this project, in rough priority order
 - **CI pipeline** -- a GitHub Actions workflow running `npm test` + `npm run lint` on every push
   would catch regressions before they're manually noticed, and gate `test:e2e` as an optional
   manually-triggered job given its cost.
+

@@ -111,7 +111,7 @@ export async function runBatch(
       lastName: record.lastName,
       medicalId: record.medicalId,
     });
-    const outcome = await runExclusive(record, runFn);
+    const outcome = await runExclusive(record, runFn, { useExampleDefaults: false });
     outcomes.push(outcome);
     systemLog.info("batch.patient_finished", {
       runId: outcome.runId,

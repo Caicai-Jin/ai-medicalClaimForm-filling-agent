@@ -1,0 +1,10 @@
+const fs=require('fs');
+const fields=['firstName','lastName','dateOfBirth','medicalId','gender','bloodType','allergies','medications','emergencyContactName','emergencyContactPhone'];
+const first=['Alex','Mei','José','Anne-Marie','Sam','Zoë','Omar','Priya','Jean Luc','Alexandria'];
+const last=['Example','Test-Smith',"O'Example",'Chen','García','Nguyen','Demo','Sample','Van Example','Longsyntheticfamilyname'];
+const records=Array.from({length:100},(_,i)=>({firstName:first[i%10],lastName:last[Math.floor(i/10)],dateOfBirth:`${1950+i%55}-${String(1+i%12).padStart(2,'0')}-${String(1+i%28).padStart(2,'0')}`,medicalId:`SYNTH-${String(i+1).padStart(4,'0')}`,gender:['Male','Female','Other'][i%3],bloodType:['A+','A-','B+','B-','AB+','AB-','O+','O-'][i%8],allergies:i%5===0?'':i%5===1?'None':i%5===2?'Synthetic allergen A, synthetic allergen B':i%5===3?'Synthetic "quoted" note':'Synthetic long note for testing exact preservation of punctuation, spaces, and multiple listed items.',medications:i%4===0?'':'Synthetic test medication '+(i%7),emergencyContactName:i%4===0?'':`Test Contact ${i+1}`,emergencyContactPhone:i%4===0?'':`202-555-${String(100+i).padStart(4,'0')}`}));
+const csv=rows=>fields.join(',')+'\n'+rows.map(r=>fields.map(k=>'"'+String(r[k]??'').replaceAll('"','""')+'"').join(',')).join('\n')+'\n';
+fs.writeFileSync('patients-100.csv',csv(records));fs.writeFileSync('records.json',JSON.stringify(records,null,2));
+const bad=[{...records[0],firstName:''},{...records[1],medicalId:''},{...records[2],dateOfBirth:'not-a-date'},{...records[3],lastName:''},{...records[4],dateOfBirth:'2000-99-99'},{...records[5],gender:'UnsupportedValue'}];
+fs.writeFileSync('patients-invalid.csv',csv(bad));
+console.log('Saved 100 valid-shaped synthetic records and six negative cases.');

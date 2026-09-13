@@ -1,0 +1,10 @@
+[
+  {
+    "scenario": "delayed confirmation",
+    "passed": true
+  },
+  {
+    "scenario": "missing confirmation",
+    "passed": true
+  }
+]

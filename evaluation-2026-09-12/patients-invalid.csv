@@ -1,0 +1,7 @@
+firstName,lastName,dateOfBirth,medicalId,gender,bloodType,allergies,medications,emergencyContactName,emergencyContactPhone
+"","Example","1950-01-01","SYNTH-0001","Male","A+","","","",""
+"Mei","Example","1951-02-02","","Female","A-","None","Synthetic test medication 1","Test Contact 2","202-555-0101"
+"José","Example","not-a-date","SYNTH-0003","Other","B+","Synthetic allergen A, synthetic allergen B","Synthetic test medication 2","Test Contact 3","202-555-0102"
+"Anne-Marie","","1953-04-04","SYNTH-0004","Male","B-","Synthetic ""quoted"" note","Synthetic test medication 3","Test Contact 4","202-555-0103"
+"Sam","Example","2000-99-99","SYNTH-0005","Female","AB+","Synthetic long note for testing exact preservation of punctuation, spaces, and multiple listed items.","","",""
+"Zoë","Example","1955-06-06","SYNTH-0006","UnsupportedValue","AB-","","Synthetic test medication 5","Test Contact 6","202-555-0105"

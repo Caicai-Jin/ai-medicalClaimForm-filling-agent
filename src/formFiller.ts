@@ -101,7 +101,8 @@ function buildTools(page: Page, mutex: Mutex, state: FormSessionState) {
             await page
               .getByRole("button", { name: "Submit", exact: true })
               .click({ timeout: ACTION_TIMEOUT });
-            // Read immediately -- the page can close itself within a few seconds of a successful submit.
+            // Wait for asynchronous confirmation rather than reading before the UI updates.
+            await page.waitForFunction(() => /submitted successfully/i.test(document.body.innerText), { }, { timeout: ACTION_TIMEOUT }).catch(() => undefined);
             const bodyText = await page.evaluate(() => document.body.innerText).catch(() => "");
             state.submitted = /submitted successfully/i.test(bodyText);
             state.confirmationText = bodyText;
@@ -127,3 +128,4 @@ export class FormFiller {
     this.tools = buildTools(page, new Mutex(), this.state);
   }
 }
+

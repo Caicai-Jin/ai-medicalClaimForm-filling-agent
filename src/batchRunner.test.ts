@@ -112,3 +112,26 @@ Bad,Row,not-a-date,999`);
   assert.equal(result.completed, 1);
   assert.equal(result.skippedRows.length, 1);
 });
+
+
+test("runBatch preserves absent optional fields without example-patient defaults", async () => {
+  const filePath = writeTempCsv('firstName,lastName,dateOfBirth,medicalId\nAlice,Smith,1985-05-12,12345678');
+  const result = await runBatch(filePath, async (data) => {
+    assert.deepEqual(data, {firstName: 'Alice', lastName: 'Smith', dateOfBirth: '1985-05-12', medicalId: '12345678'});
+    return {text: 'ok', submitted: true};
+  });
+  assert.equal(result.completed, 1);
+});
+
+test("runBatch preserves blank optional values and supplied patient values", async () => {
+  const filePath = writeTempCsv('firstName,lastName,dateOfBirth,medicalId,allergies,medications,emergencyContactName,emergencyContactPhone\nAlice,Smith,1985-05-12,12345678,,Prescribed test medication,,');
+  const result = await runBatch(filePath, async (data) => {
+    assert.equal(data.allergies, undefined);
+    assert.equal(data.medications, 'Prescribed test medication');
+    assert.equal(data.emergencyContactName, undefined);
+    assert.equal(data.emergencyContactPhone, undefined);
+    return {text: 'ok', submitted: true};
+  });
+  assert.equal(result.completed, 1);
+});
+

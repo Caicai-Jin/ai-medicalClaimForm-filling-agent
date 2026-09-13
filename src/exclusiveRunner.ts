@@ -1,5 +1,5 @@
 import { TaskRunner, WorkflowResult } from "./taskRunner";
-import { MedicalFormData, exampleFormData } from "./types";
+import { MedicalFormData, exampleFormData, medicalFormDataSchema } from "./types";
 import { CategorizedError, FailureCategory } from "./errors";
 import { createRunLogger, generateRunId } from "./logger";
 
@@ -13,6 +13,8 @@ export interface RunOutcome {
 }
 
 export interface RetryOptions {
+  /** Disable example-patient defaults for complete batch records. */
+  useExampleDefaults?: boolean;
   maxAttempts?: number;
   retryDelayMs?: number;
 }
@@ -38,7 +40,7 @@ export async function runExclusive(
   data: Partial<MedicalFormData> = {},
   runFn: (data: MedicalFormData, runId: string) => Promise<WorkflowResult> = (d, runId) =>
     defaultTaskRunner.run(d, runId),
-  { maxAttempts = DEFAULT_MAX_ATTEMPTS, retryDelayMs = DEFAULT_RETRY_DELAY_MS }: RetryOptions = {}
+  { maxAttempts = DEFAULT_MAX_ATTEMPTS, retryDelayMs = DEFAULT_RETRY_DELAY_MS, useExampleDefaults = true }: RetryOptions = {}
 ): Promise<RunOutcome> {
   const runId = generateRunId();
   const log = createRunLogger(runId);
@@ -50,7 +52,9 @@ export async function runExclusive(
 
   isRunning = true;
   try {
-    const merged: MedicalFormData = { ...exampleFormData, ...data };
+    const merged: MedicalFormData = useExampleDefaults
+      ? { ...exampleFormData, ...data }
+      : medicalFormDataSchema.parse(data);
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
