@@ -1,5 +1,26 @@
 # AI Form-Filling Agent
 
+## Performance improvement
+
+The initial benchmark processed the 100 records in `patients-100.csv` sequentially in **25.16 minutes**. The main bottleneck was repeated model round trips: the agent filled individual fields through separate tool calls and used additional calls to move between form sections.
+
+I added a grouped `fillFields` action. The model still decides which fields and values belong in each section, but it can now open a section and submit all of that section's field/value pairs in one tool call. Playwright fills those fields sequentially under the existing mutex, returns an outcome for each field, and sends one updated page snapshot back to the model. Failed fields can be retried individually, and final success still requires confirmation from the page.
+
+This targets the measured bottleneck without processing records concurrently or weakening submission checks.
+
+| Measurement | Initial benchmark | Optimized supervised run | Change |
+|---|---:|---:|---:|
+| Same synthetic records | 100 | 100 | — |
+| Total processing time | 25.16 minutes | **13.93 minutes** | **44.6% less time** |
+| Average time per record | 15.10 seconds | **8.36 seconds** | **44.6% lower** |
+| Median time per record | 15.53 seconds | **8.13 seconds** | **47.6% lower** |
+| 95th-percentile time | 17.74 seconds | **10.30 seconds** | **41.9% lower** |
+| Model requests | 1,380 | **575** | **58.3% fewer** |
+| Confirmed submissions with matching captured values | 100/100 | **100/100** | Maintained |
+
+The optimized implementation passes **47 unit tests** and the TypeScript compiler check. See the [detailed methodology and CMD instructions](evaluation-performance-2026-09-13/README.md), [exact 100-record CSV](evaluation-performance-2026-09-13/patients-100.csv), and [supervised rerun results](evaluation-performance-2026-09-13/visible-rerun-results.csv). Timing can vary with model, network, and browser latency.
+
+
 ## Demo
 
 [![Watch the demo](https://img.youtube.com/vi/6S_8ZS-nQlE/maxresdefault.jpg)](https://youtu.be/6S_8ZS-nQlE)

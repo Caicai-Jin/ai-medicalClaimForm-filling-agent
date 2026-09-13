@@ -1,0 +1,34 @@
+{
+  "baseline": {
+    "records": 100,
+    "confirmed": 100,
+    "exactMatches": 100,
+    "failed": 0,
+    "mismatches": 0,
+    "totalSeconds": 1509.5070000000003,
+    "medianSeconds": 15.5325,
+    "p95Seconds": 17.744,
+    "modelRequests": 1380,
+    "inputTokens": 3815149,
+    "outputTokens": 84882,
+    "cachedInputTokens": 492081
+  },
+  "optimized": {
+    "records": 100,
+    "confirmed": 100,
+    "exactMatches": 100,
+    "failed": 0,
+    "mismatches": 0,
+    "totalSeconds": 881.6759999999999,
+    "medianSeconds": 8.736999999999998,
+    "p95Seconds": 11.028,
+    "modelRequests": 575,
+    "inputTokens": 1232199,
+    "outputTokens": 94032,
+    "cachedInputTokens": 0
+  },
+  "complete": true,
+  "runtimeReductionPercent": 41.591791227202016,
+  "modelRequestReductionPercent": 58.33333333333333,
+  "inputTokenReductionPercent": 67.70246719066542
+}

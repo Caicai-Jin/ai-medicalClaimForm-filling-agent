@@ -8,7 +8,7 @@
     "schedule": "ts-node ./src/_internal/schedule.ts",
     "start": "ts-node ./src/_internal/service.ts",
     "batch": "ts-node ./src/_internal/batch.ts",
-    "test": "node --require ts-node/register --test src/mutex.test.ts src/promptBuilder.test.ts src/exclusiveRunner.test.ts src/errors.test.ts src/logger.test.ts src/browserAgent.test.ts src/types.test.ts src/batchRunner.test.ts",
+    "test": "node --require ts-node/register --test src/mutex.test.ts src/promptBuilder.test.ts src/exclusiveRunner.test.ts src/errors.test.ts src/logger.test.ts src/browserAgent.test.ts src/types.test.ts src/batchRunner.test.ts src/formFiller.test.ts",
     "test:e2e": "node --require ts-node/register --test src/taskRunner.e2e.test.ts",
     "lint": "eslint .",
     "format": "prettier --write .",

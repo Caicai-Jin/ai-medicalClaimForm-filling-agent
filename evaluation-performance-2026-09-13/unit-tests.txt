@@ -1,0 +1,91 @@
+
+> ai-form-filling-agent@1.0.0 test
+> node --require ts-node/register --test src/mutex.test.ts src/promptBuilder.test.ts src/exclusiveRunner.test.ts src/errors.test.ts src/logger.test.ts src/browserAgent.test.ts src/types.test.ts src/batchRunner.test.ts src/formFiller.test.ts
+
+[2026-09-13T13:55:20.075Z] [INFO] batch.patient_started {"firstName":"Alice","lastName":"Smith","medicalId":"12345678"}
+✔ parsePatientCsv parses each row into a validated MedicalFormData record (9.315ms)
+✔ parsePatientCsv reports a malformed row without dropping the valid rows around it (1.3195ms)
+✔ parsePatientCsv reports a row missing a required field (1.3202ms)
+✔ parsePatientCsv handles quoted fields containing commas (1.05ms)
+[2026-09-13T13:55:20.093Z] [INFO] [run-mtzvm8wg-a1f73c] batch.patient_finished {"status":"completed","firstName":"Alice","lastName":"Smith"}
+[2026-09-13T13:55:20.095Z] [INFO] batch.patient_started {"firstName":"Carlos","lastName":"Diaz","medicalId":"87654321"}
+[2026-09-13T13:55:20.097Z] [INFO] [run-mtzvm8ww-9dfa4c] batch.patient_finished {"status":"completed","firstName":"Carlos","lastName":"Diaz"}
+[2026-09-13T13:55:20.097Z] [INFO] batch.finished {"total":2,"completed":2,"failed":0,"skippedRows":0}
+[2026-09-13T13:55:20.103Z] [INFO] batch.patient_started {"firstName":"Alice","lastName":"Smith","medicalId":"12345678"}
+[2026-09-13T13:55:20.105Z] [ERROR] [run-mtzvm8x4-112503] outcome.exception {"category":"unknown","message":"simulated browser crash","attempt":1,"maxAttempts":3}
+[2026-09-13T13:55:20.108Z] [INFO] [run-mtzvm8x4-112503] batch.patient_finished {"status":"failed","firstName":"Alice","lastName":"Smith"}
+[2026-09-13T13:55:20.110Z] [INFO] batch.patient_started {"firstName":"Carlos","lastName":"Diaz","medicalId":"87654321"}
+[2026-09-13T13:55:20.114Z] [INFO] [run-mtzvm8xd-a16330] batch.patient_finished {"status":"completed","firstName":"Carlos","lastName":"Diaz"}
+[2026-09-13T13:55:20.115Z] [INFO] batch.finished {"total":2,"completed":1,"failed":1,"skippedRows":0}
+[2026-09-13T13:55:20.121Z] [WARN] batch.row_skipped {"line":3,"issues":["dateOfBirth: dateOfBirth must be in YYYY-MM-DD format"]}
+[2026-09-13T13:55:20.122Z] [INFO] batch.patient_started {"firstName":"Alice","lastName":"Smith","medicalId":"12345678"}
+[2026-09-13T13:55:20.125Z] [INFO] [run-mtzvm8xn-9bbcf3] batch.patient_finished {"status":"completed","firstName":"Alice","lastName":"Smith"}
+[2026-09-13T13:55:20.127Z] [INFO] batch.finished {"total":1,"completed":1,"failed":0,"skippedRows":1}
+[2026-09-13T13:55:20.133Z] [INFO] batch.patient_started {"firstName":"Alice","lastName":"Smith","medicalId":"12345678"}
+[2026-09-13T13:55:20.134Z] [INFO] [run-mtzvm8xy-b5ac5d] batch.patient_finished {"status":"completed","firstName":"Alice","lastName":"Smith"}
+[2026-09-13T13:55:20.135Z] [INFO] batch.finished {"total":1,"completed":1,"failed":0,"skippedRows":0}
+[2026-09-13T13:55:20.141Z] [INFO] batch.patient_started {"firstName":"Alice","lastName":"Smith","medicalId":"12345678"}
+[2026-09-13T13:55:20.143Z] [INFO] [run-mtzvm8y6-cf7039] batch.patient_finished {"status":"completed","firstName":"Alice","lastName":"Smith"}
+[2026-09-13T13:55:20.145Z] [INFO] batch.finished {"total":1,"completed":1,"failed":0,"skippedRows":0}
+✔ runBatch runs one patient at a time, in file order, via runExclusive (29.1554ms)
+✔ runBatch isolates a failure to one patient and keeps processing the rest (16.0941ms)
+✔ runBatch surfaces skipped rows in the summary without affecting valid patients (13.9063ms)
+✔ runBatch preserves absent optional fields without example-patient defaults (5.8565ms)
+✔ runBatch preserves blank optional values and supplied patient values (11.8052ms)
+✔ BrowserAgent.screenshot() returns false (never throws) when launch() hasn't succeeded yet (3.2125ms)
+✔ BrowserAgent.getPage() throws a clear error before launch() succeeds (1.895ms)
+✔ BrowserAgent.close() is a safe no-op before launch() is ever called (1.3432ms)
+✔ classifyLlmError flags 401/403 as an API key problem (2.1971ms)
+✔ classifyLlmError flags 429 as rate limiting (0.5498ms)
+✔ classifyLlmError flags 5xx as a Gemini server error (0.3536ms)
+✔ classifyLlmError flags connection-level errors as network issues (0.2865ms)
+✔ classifyLlmError flags a hung/timed-out call as category 'timeout', not a generic llm error (0.2714ms)
+✔ classifyBrowserError flags navigation failures as network issues (0.4532ms)
+✔ classifyBrowserError falls back to a generic browser category (0.5026ms)
+[2026-09-13T13:55:19.939Z] [WARN] [run-mtzvm8sh-3e20e1] outcome.verification_failed {"summary":"I think it worked"}
+[2026-09-13T13:55:19.947Z] [ERROR] [run-mtzvm8sq-effb52] outcome.exception {"category":"unknown","message":"browser crashed","attempt":1,"maxAttempts":3}
+[2026-09-13T13:55:19.952Z] [ERROR] [run-mtzvm8sv-a24767] outcome.exception {"category":"network","message":"Failed to reach the target site","attempt":1,"maxAttempts":1}
+[2026-09-13T13:55:19.957Z] [WARN] [run-mtzvm8t0-08e604] outcome.verification_failed {"summary":"maybe?"}
+[2026-09-13T13:55:19.960Z] [WARN] [run-mtzvm8t4-4b9fb8] run.retrying {"attempt":1,"maxAttempts":3,"category":"network","message":"transient blip"}
+✔ runExclusive merges partial input over the example defaults (7.1035ms)
+✔ runExclusive reports failed when the workflow says submitted: false (7.889ms)
+✔ runExclusive reports completed when submitted: true (0.5522ms)
+✔ runExclusive reports failed (not a thrown error) if the workflow itself throws (4.5602ms)
+✔ runExclusive surfaces the category from a CategorizedError (4.6785ms)
+✔ runExclusive tags a failed verification with category 'verification' (3.7215ms)
+[2026-09-13T13:55:19.974Z] [ERROR] [run-mtzvm8ti-233c95] outcome.exception {"category":"llm","message":"invalid API key","attempt":1,"maxAttempts":3}
+[2026-09-13T13:55:19.976Z] [WARN] [run-mtzvm8tj-534636] run.retrying {"attempt":1,"maxAttempts":2,"category":"timeout","message":"still hanging"}
+✔ runExclusive retries a retryable category and succeeds once the failure clears (13.9615ms)
+✔ runExclusive does not retry a non-retryable category (1.6007ms)
+[2026-09-13T13:55:19.993Z] [ERROR] [run-mtzvm8tj-534636] outcome.exception {"category":"timeout","message":"still hanging","attempt":2,"maxAttempts":2}
+✔ runExclusive gives up after maxAttempts and reports the last failure (19.0016ms)
+[2026-09-13T13:55:19.996Z] [WARN] [run-mtzvm8u3-2f8d65] run.skipped {"reason":"another run is already in progress"}
+✔ runExclusive skips a second call while the first is still in flight (2.1495ms)
+✔ runExclusive allows a new run after the previous one finishes (0.6368ms)
+✔ grouped filling opens the selected section before filling and serializes groups (82.2763ms)
+✔ grouped filling continues after a missing field and returns one snapshot (10.442ms)
+✔ grouped filling reports action and snapshot failures without claiming success (3.1785ms)
+[2026-09-13T13:55:12.307Z] [INFO] [run-mtzvm2wi-e071d2] test.event {"foo":"bar"}
+[2026-09-13T13:55:12.328Z] [ERROR] [run-mtzvm2x4-8786c5] test.error_event {"reason":"boom"}
+✔ generateRunId produces unique, non-empty ids (16.5399ms)
+✔ createRunLogger appends a well-formed JSON line per call, tagged with its runId (24.7031ms)
+✔ createRunLogger's error level is recorded correctly (10.6811ms)
+✔ Mutex runs queued tasks in call order, not completion order (143.7469ms)
+✔ Mutex continues serializing after a queued task throws (10.1271ms)
+✔ buildPrompt includes all required Personal Information fields (4.7686ms)
+✔ buildPrompt includes optional fields when present (0.3959ms)
+✔ buildPrompt omits optional fields entirely when not provided (0.3437ms)
+✔ partialMedicalFormDataSchema accepts a valid partial body (8.7419ms)
+✔ partialMedicalFormDataSchema accepts an empty body (every field is optional) (1.2284ms)
+✔ partialMedicalFormDataSchema rejects a malformed dateOfBirth (4.397ms)
+✔ partialMedicalFormDataSchema rejects an empty-string required-looking field (2.7283ms)
+✔ partialMedicalFormDataSchema rejects the wrong type for a field (4.8044ms)
+✔ partialMedicalFormDataSchema rejects unrecognized fields (3.1542ms)
+ℹ tests 47
+ℹ suites 0
+ℹ pass 47
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12479.0703

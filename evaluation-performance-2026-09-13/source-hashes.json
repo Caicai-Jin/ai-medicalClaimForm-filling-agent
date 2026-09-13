@@ -1,0 +1,8 @@
+{
+  "src/formFiller.ts": "389f58b8e6a6afdc7eaeacbc09dc52487c0b3d385e576ce69fa4a1084b01f658",
+  "src/promptBuilder.ts": "529891503050a3401aa24c8afe8d6fc4703343cc00c7dfa8626ac21865af1e03",
+  "src/formFiller.test.ts": "d326ed00d5439870a40cc24e3bed9c45809406c45ecebbe062cd518cf335b7cf",
+  "src/taskRunner.ts": "726eacd0a8dd94854cafff38fd11ad6cd83aae1147ed379ef8d1048278c9b934",
+  "src/_internal/setup.ts": "26a51eb2daa9c4f2306434dd86d909eb0c64807e71317e71c5b37351636755c7",
+  "patients-100.csv": "3fa02e9972e28035ae4e1b66d82363fd54fe4a6370d21698d8251363a1b0bc73"
+}

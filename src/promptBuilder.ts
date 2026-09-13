@@ -10,9 +10,12 @@ export function buildPrompt(data: MedicalFormData): string {
   if (data.gender) lines.push(`- Gender: ${data.gender}`);
   if (data.bloodType) lines.push(`- Blood Type: ${data.bloodType}`);
   if (data.allergies) lines.push(`- Allergies: ${data.allergies}`);
-  if (data.medications) lines.push(`- Current Medications: ${data.medications}`);
-  if (data.emergencyContactName) lines.push(`- Emergency Contact Name: ${data.emergencyContactName}`);
-  if (data.emergencyContactPhone) lines.push(`- Emergency Contact Phone: ${data.emergencyContactPhone}`);
+  if (data.medications)
+    lines.push(`- Current Medications: ${data.medications}`);
+  if (data.emergencyContactName)
+    lines.push(`- Emergency Contact Name: ${data.emergencyContactName}`);
+  if (data.emergencyContactPhone)
+    lines.push(`- Emergency Contact Phone: ${data.emergencyContactPhone}`);
 
   return `
 You are filling out a "Medical Information Form" web page using the tools provided.
@@ -34,8 +37,12 @@ ${lines.join("\n")}
 
 Process:
 1. Call getPageState first to see what's currently visible.
-2. Fill in every field belonging to the currently open section. Only call openSection when you
-   need to reveal a section that is currently closed, then fill its fields.
+2. Use ONE fillFields call containing every supplied field belonging to the currently open section.
+   Choose kind "text" for text inputs and "dropdown" for dropdowns, using the exact visible labels.
+   Check individual outcomes; retry only failures. Do not invent values for omitted optional fields.
+   Prefer grouped filling over separate fillField/selectDropdown calls. For a CLOSED section,
+   include sectionToOpen in the same fillFields call to open it and fill its fields together.
+   Omit sectionToOpen for an already open section. Skip sections with no supplied fields.
 3. Once every field listed above has been filled in, call submitForm.
 4. submitForm's own result tells you whether it succeeded. Do NOT call any other tool after
    submitForm -- just reply immediately with a short final summary based on its result.
